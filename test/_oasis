@@ -1,0 +1,17 @@
+Name: CSV-Tests
+Version: 0.1
+OCamlVersion: >= 4.02
+Synopsis: Tests for CSV type provider
+Authors: nv-vn <nv@cock.li>
+License: MIT
+
+OASISFormat: 0.4
+BuildTools: ocamlbuild
+Plugins: META (0.4), DevFiles (0.4)
+
+Executable "test_json_types"
+  Path: .
+  MainIs: test.ml
+  Install: false
+  BuildDepends: ppx_csv_provider, csv, lwt, cohttp.lwt
+  DataFiles: test.csv
