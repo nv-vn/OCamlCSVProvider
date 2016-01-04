@@ -34,14 +34,26 @@ let record_of_list loc list example =
       list example in
   Str.type_ ~loc [Type.mk {txt = "t"; loc = loc} ~kind:(Ptype_record fields)]
 
+let rec make_list loc f = function
+  | [] -> Exp.construct ~loc { txt = Lident "[]"; loc = loc } None
+  | h :: t -> Exp.construct ~loc { txt = Lident "::"; loc = loc } (Some (Exp.tuple ~loc [f h; make_list loc f t]))
+
+let ast_of_csv loc =
+  let f = make_list loc (fun x -> Exp.constant ~loc (Const_string (x, None))) in
+  make_list loc f
+
 let struct_of_url ?(sep=',') url loc =
   get_csv url >>= fun text ->
   let data = Csv.of_string ~separator:sep text |> Csv.input_all in
   let format = List.hd data
   and rows = List.tl data in
-  let embed = [%stri let embed = [%e Exp.constant (Const_string (text, None))]]
+  let embed = [%stri let embed = ref [%e ast_of_csv loc data]]
   and type_ = record_of_list loc format (List.hd rows) in
-  return @@ Mod.structure ~loc [embed; type_]
+  return @@ Mod.structure ~loc [embed; (* Maybe we should abandon the F#-style interface *)
+                                type_; (* and shift to a more idiomatic OCaml style?     *)
+                                [%stri let load ?(sep=',') url = embed := !embed];
+                                [%stri let rows () = !embed];
+                                [%stri let get_sample () = !embed]]
 
 let csv_mapper argv =
   {default_mapper with
