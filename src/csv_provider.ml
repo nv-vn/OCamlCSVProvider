@@ -4,6 +4,8 @@ open Asttypes
 open Parsetree
 open Longident
 
+open Batteries
+
 open Lwt
 open Cohttp
 open Cohttp_lwt_unix
@@ -27,17 +29,38 @@ let infer s =
       end
   end
 
+let inferf loc s i =
+  infer s |> function
+  | "int" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "int_of_string"; loc = loc}) ["", i]
+  | "float" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "float_of_string"; loc = loc}) ["", i]
+  | "string" -> i
+
 let lexer_friendly str =
-  let open Batteries in
   let stripped = String.replace_chars (function ' ' -> "" | '\t' -> "" | c -> String.of_char c)  str in
-  String.uncapitalize stripped
+  let uncaps = String.uncapitalize stripped in
+  String.replace ~str:uncaps ~sub:"open" ~by:"open_" |> snd (* TODO: do for all keywords *)
 
 let record_of_list loc list example =
   let fields = List.map2 (fun i e ->
                            Type.field ~loc {txt = lexer_friendly i; loc = loc}
                              (Typ.constr {txt = Lident (infer e); loc = loc} []))
       list example in
-  Str.type_ ~loc [Type.mk {txt = "t"; loc = loc} ~kind:(Ptype_record fields)]
+  Str.type_ ~loc [Type.mk {txt = "row"; loc = loc} ~kind:(Ptype_record fields)]
+
+let converter_of_list loc list example =
+  let names = List.map (fun n -> lexer_friendly n) list in
+  let pattern =
+    List.fold_right
+      (fun n r -> Pat.construct ~loc { txt = Lident "::"; loc = loc} (Some (Pat.tuple ~loc [Pat.var {txt = n; loc = loc}; r])))
+      names (Pat.construct ~loc { txt = Lident "[]"; loc = loc} None) in
+  let rhs =
+    Exp.record ~loc
+      (List.map2 (fun i e ->
+                   let n = { txt = Lident (lexer_friendly i); loc = loc } in
+                   (n, inferf loc e (Exp.ident ~loc n)))
+          list example) None in
+  let matcher = Exp.function_ ~loc [Exp.case pattern rhs] in
+  [%stri let row_of_list = [%e matcher]]
 
 let rec make_list loc f = function
   | [] -> Exp.construct ~loc { txt = Lident "[]"; loc = loc } None
@@ -52,13 +75,15 @@ let struct_of_url ?(sep=',') url loc =
   let data = Csv.of_string ~separator:sep text |> Csv.input_all in
   let format = List.hd data
   and rows = List.tl data in
-  let embed = [%stri let embed = ref [%e ast_of_csv loc data]]
-  and type_ = record_of_list loc format (List.hd rows) in
-  return @@ Mod.structure ~loc [embed; (* Maybe we should abandon the F#-style interface *)
-                                type_; (* and shift to a more idiomatic OCaml style?     *)
+  let embed = [%stri let embed = ref [%e ast_of_csv loc rows]]
+  and type_ = record_of_list loc format (List.hd rows)
+  and conv = converter_of_list loc format (List.hd rows) in
+  return @@ Mod.structure ~loc [embed;
+                                type_;
+                                conv;
                                 [%stri let load ?(sep=',') url = embed := !embed];
-                                [%stri let rows () = !embed];
-                                [%stri let get_sample () = !embed]]
+                                [%stri let rows () = List.map row_of_list !embed];
+                                [%stri let get_sample () = rows ()]]
 
 let csv_mapper argv =
   {default_mapper with
