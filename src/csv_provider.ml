@@ -20,9 +20,9 @@ let get_csv url =
     Lwt_io.read fd
 
 let infer s =
-  begin try (float_of_string s; "float") with
+  begin try (int_of_string s; "int") with
     | _ ->
-      begin try (int_of_string s; "int") with
+      begin try (float_of_string s; "float") with
         | _ -> "string"
       end
   end
