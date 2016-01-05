@@ -17,4 +17,4 @@ Executable "ppx_csv_provider"
   Path: src/
   MainIs: csv_provider.ml
   CompiledObject: best
-  BuildDepends: compiler-libs.common, lwt, cohttp.lwt, ppx_tools.metaquot, csv, re, re.pcre
+  BuildDepends: compiler-libs.common, lwt, cohttp.lwt, ppx_tools.metaquot, csv, batteries

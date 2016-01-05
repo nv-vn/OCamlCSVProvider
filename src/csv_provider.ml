@@ -10,8 +10,8 @@ open Cohttp_lwt_unix
 
 let get_csv url =
   let is_web =
-    let r = Re_pcre.regexp "^https?://.*" in
-    Re.execp r url in
+    let open Batteries in
+    String.starts_with url "http://" || String.starts_with url "https://" in
   if is_web then
     Client.get (Uri.of_string url) >>= fun (resp, body) ->
     body |> Cohttp_lwt_body.to_string >|= fun body -> body
@@ -27,9 +27,14 @@ let infer s =
       end
   end
 
+let lexer_friendly str =
+  let open Batteries in
+  let stripped = String.replace_chars (function ' ' -> "" | '\t' -> "" | c -> String.of_char c)  str in
+  String.uncapitalize stripped
+
 let record_of_list loc list example =
   let fields = List.map2 (fun i e ->
-                           Type.field ~loc {txt = i; loc = loc}
+                           Type.field ~loc {txt = lexer_friendly i; loc = loc}
                              (Typ.constr {txt = Lident (infer e); loc = loc} []))
       list example in
   Str.type_ ~loc [Type.mk {txt = "t"; loc = loc} ~kind:(Ptype_record fields)]
