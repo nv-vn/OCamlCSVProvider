@@ -83,7 +83,17 @@ let struct_of_url ?(sep=',') url loc =
                                 conv;
                                 [%stri let load ?(sep=',') url = embed := !embed];
                                 [%stri let rows () = List.map row_of_list !embed];
-                                [%stri let get_sample () = rows ()]]
+                                [%stri let rec take ?(acc=[]) amount list = match amount, list with
+                                       | 0, _ | _, [] -> acc
+                                       | n, x :: xs -> take ~acc:(acc @ [x]) (pred n) xs];
+                                [%stri let rec drop amount = function
+                                       | _ :: xs when amount > 0 -> xs
+                                       | xs -> xs];
+                                [%stri let rec truncate amount list =
+                                         if amount >= List.length list then []
+                                         else drop (List.length list - amount) list];
+                                [%stri let get_sample ?(amount = 10) () =
+                                         List.map row_of_list (take amount !embed)]]
 
 let csv_mapper argv =
   {default_mapper with

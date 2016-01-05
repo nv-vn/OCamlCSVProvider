@@ -9,7 +9,5 @@ F# CSV type provider ported to OCaml
   - MyData.map : row list -> (row -> row) -> row list
   - MyData.filter : row list -> (row -> bool) -> row list
   - MyData.save : row list -> name:string -> () Lwt.t
-  - MyData.truncate : row list -> int -> row list
-  - MyData.take : row list -> int -> row list
   - MyData.range : row list -> top:int -> bottom:int -> row list
 * Filter out keywords
