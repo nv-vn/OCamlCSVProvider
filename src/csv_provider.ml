@@ -31,8 +31,14 @@ let infer s =
 
 let inferf loc s i =
   infer s |> function
-  | "int" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "int_of_string"; loc = loc}) ["", i]
-  | "float" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "float_of_string"; loc = loc}) ["", i]
+  | "int" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "int_of_string"; loc = loc }) ["", i]
+  | "float" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "float_of_string"; loc = loc }) ["", i]
+  | "string" -> i
+
+let inferf' loc s i =
+  infer s |> function
+  | "int" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "string_of_int"; loc = loc }) ["", i]
+  | "float" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "string_of_float"; loc = loc }) ["", i]
   | "string" -> i
 
 let lexer_friendly str =
@@ -62,6 +68,19 @@ let converter_of_list loc list example =
   let matcher = Exp.function_ ~loc [Exp.case pattern rhs] in
   [%stri let row_of_list = [%e matcher]]
 
+let formatter_of_list loc list example =
+  let names = List.map2 (fun n e -> (lexer_friendly n, e)) list example in
+  let str =
+    List.fold_right
+      (fun (n, e) r -> Exp.apply ~loc
+                         (Exp.ident ~loc { txt = Lident "^^^"; loc = loc })
+                         [("", inferf' loc e (Exp.field ~loc (Exp.ident ~loc { txt = Lident "x"; loc = loc }) { txt = Lident n; loc = loc }));
+                          ("", r)])
+      names (Exp.constant ~loc (Const_string ("", None))) in
+  [%stri let show xs =
+           let (^^^) a b = if b = "" then a else a ^ " | " ^ b in
+           List.fold_right (^) (List.mapi (fun i x -> (string_of_int i ^ ". ") ^ [%e str] ^ "\n") xs) ""]
+
 let rec make_list loc f = function
   | [] -> Exp.construct ~loc { txt = Lident "[]"; loc = loc } None
   | h :: t -> Exp.construct ~loc { txt = Lident "::"; loc = loc } (Some (Exp.tuple ~loc [f h; make_list loc f t]))
@@ -77,10 +96,12 @@ let struct_of_url ?(sep=',') url loc =
   and rows = List.tl data in
   let embed = [%stri let embed = [%e ast_of_csv loc rows]]
   and type_ = record_of_list loc format (List.hd rows)
-  and conv = converter_of_list loc format (List.hd rows) in
+  and conv = converter_of_list loc format (List.hd rows)
+  and show = formatter_of_list loc format (List.hd rows) in
   return @@ Mod.structure ~loc [embed;
                                 type_;
                                 conv;
+                                show;
                                 [%stri let load ?(sep=',') url = embed];
                                 [%stri let rows data = List.map row_of_list data];
                                 [%stri let rec take ?(acc=[]) amount list = match amount, list with

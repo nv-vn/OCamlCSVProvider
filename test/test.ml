@@ -23,4 +23,6 @@ let _ =
   let open N in
   let data = N.map (fun x -> {x with high = x.high +. 100.}) (N.rows N.embed) in
   let data = N.filter (fun x -> x.volume > 50000000) data in
-  List.map (fun d -> Printf.printf "%f\n" d.high) data
+  List.map (fun d -> Printf.printf "%f\n" d.high) data;
+  print_endline "\nPretty-printing data with `show`...";
+  print_endline @@ N.show data
