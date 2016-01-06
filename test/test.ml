@@ -19,5 +19,8 @@ let _ =
     N.(function
       {date = d; open_ = o; high = h; low = l; close = c; volume = v; adjClose = a} ->
         Printf.printf "%s | %f | %f | %f | %f | %d | %f\n" d o h l c v a)
-    (N.range ~from:1 ~until:3 (N.rows N.embed))
-
+    (N.range ~from:1 ~until:3 (N.rows N.embed));
+  let open N in
+  let data = N.map (fun x -> {x with high = x.high +. 100.}) (N.rows N.embed) in
+  let data = N.filter (fun x -> x.volume > 50000000) data in
+  List.map (fun d -> Printf.printf "%f\n" d.high) data

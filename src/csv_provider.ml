@@ -95,7 +95,9 @@ let struct_of_url ?(sep=',') url loc =
                                 [%stri let range ~from ~until list =
                                          take (until - from + 1) @@ drop from list];
                                 [%stri let get_sample ?(amount = 10) data =
-                                         List.map row_of_list (take amount data)]]
+                                         List.map row_of_list (take amount data)];
+                                [%stri let map : (row -> row) -> row list -> row list = List.map];
+                                [%stri let filter : (row -> bool) -> row list -> row list = List.filter]]
 
 let csv_mapper argv =
   {default_mapper with
