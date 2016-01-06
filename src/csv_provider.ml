@@ -75,14 +75,14 @@ let struct_of_url ?(sep=',') url loc =
   let data = Csv.of_string ~separator:sep text |> Csv.input_all in
   let format = List.hd data
   and rows = List.tl data in
-  let embed = [%stri let embed = ref [%e ast_of_csv loc rows]]
+  let embed = [%stri let embed = [%e ast_of_csv loc rows]]
   and type_ = record_of_list loc format (List.hd rows)
   and conv = converter_of_list loc format (List.hd rows) in
   return @@ Mod.structure ~loc [embed;
                                 type_;
                                 conv;
-                                [%stri let load ?(sep=',') url = embed := !embed];
-                                [%stri let rows () = List.map row_of_list !embed];
+                                [%stri let load ?(sep=',') url = embed];
+                                [%stri let rows data = List.map row_of_list data];
                                 [%stri let rec take ?(acc=[]) amount list = match amount, list with
                                        | 0, _ | _, [] -> acc
                                        | n, x :: xs -> take ~acc:(acc @ [x]) (pred n) xs];
@@ -91,9 +91,11 @@ let struct_of_url ?(sep=',') url loc =
                                        | xs -> xs];
                                 [%stri let rec truncate amount list =
                                          if amount >= List.length list then []
-                                         else drop (List.length list - amount) list];
-                                [%stri let get_sample ?(amount = 10) () =
-                                         List.map row_of_list (take amount !embed)]]
+                                         else take (List.length list - amount) list];
+                                [%stri let range ~from ~until list =
+                                         take (until - from + 1) @@ drop from list];
+                                [%stri let get_sample ?(amount = 10) data =
+                                         List.map row_of_list (take amount data)]]
 
 let csv_mapper argv =
   {default_mapper with
