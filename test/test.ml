@@ -25,4 +25,9 @@ let _ =
   let data = N.filter (fun x -> x.volume > 50000000) data in
   List.map (fun d -> Printf.printf "%f\n" d.high) data;
   print_endline "\nPretty-printing data with `show`...";
-  print_endline @@ N.show data
+  print_endline @@ N.show data;
+  print_endline "\nLoading stock data from Yahoo Finance...";
+  let open Lwt in Lwt_unix.run begin
+  N.load "http://ichart.finance.yahoo.com/table.csv?s=MSFT" >>= fun csv ->
+  return @@ print_endline @@ N.show @@ N.take 100 @@ N.rows @@ List.tl csv end;
+  print_endline "\nCompleted all tests!"

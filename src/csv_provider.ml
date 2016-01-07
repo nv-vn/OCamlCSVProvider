@@ -102,7 +102,14 @@ let struct_of_url ?(sep=',') url loc =
                                 type_;
                                 conv;
                                 show;
-                                [%stri let load ?(sep=',') url = embed];
+                                [%stri let load ?(sep=',') url =
+                                         let open Lwt in
+                                         let open Cohttp in
+                                         let open Cohttp_lwt_unix in
+                                         let get = Client.get (Uri.of_string url) >>= fun (resp, body) ->
+                                                   body |> Cohttp_lwt_body.to_string >|= fun body -> body
+                                         in get >>= fun text ->
+                                         return (Csv.of_string ~separator:sep text |> Csv.input_all)];
                                 [%stri let rows data = List.map row_of_list data];
                                 [%stri let rec take ?(acc=[]) amount list = match amount, list with
                                        | 0, _ | _, [] -> acc
