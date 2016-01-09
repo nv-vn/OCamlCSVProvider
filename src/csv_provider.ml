@@ -87,6 +87,12 @@ let rec make_list loc f = function
   | [] -> Exp.construct ~loc { txt = Lident "[]"; loc = loc } None
   | h :: t -> Exp.construct ~loc { txt = Lident "::"; loc = loc } (Some (Exp.tuple ~loc [f h; make_list loc f t]))
 
+let stringify_of_list loc list example =
+  let names = List.map2 (fun n e -> (lexer_friendly n, e)) list example in
+  let str = make_list loc (fun (n, e) ->
+                            inferf' loc e (Exp.field ~loc (Exp.ident ~loc { txt = Lident "x"; loc = loc }) { txt = Lident n; loc = loc })) names in
+  [%stri let list_of_row x = [%e str]]
+
 let ast_of_csv loc =
   let f = make_list loc (fun x -> Exp.constant ~loc (Const_string (x, None))) in
   make_list loc f
@@ -100,11 +106,15 @@ let struct_of_url ?(sep=',') url loc =
   let embed = [%stri let embed = ([%e headers], [%e ast_of_csv loc rows])]
   and type_ = record_of_list loc format (List.hd rows)
   and conv = converter_of_list loc format (List.hd rows)
-  and show = formatter_of_list loc format (List.hd rows) in
+  and show = formatter_of_list loc format (List.hd rows)
+  and raw_ = stringify_of_list loc format (List.hd rows) in
   return @@ Mod.structure ~loc [embed;
                                 type_;
                                 conv;
                                 show;
+                                raw_;
+                                [%stri let raw (h, xs) =
+                                         (h, List.map list_of_row xs)];
                                 [%stri let load ?(sep=',') url =
                                          let open Lwt in
                                          let open Cohttp in

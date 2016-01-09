@@ -30,5 +30,5 @@ let _ =
   let open Lwt in Lwt_unix.run begin
   N.load "http://ichart.finance.yahoo.com/table.csv?s=MSFT" >>= fun csv ->
   return @@ print_endline @@ N.show @@ N.take 100 @@ N.rows csv end;
-  N.save ~name:"test_result.csv" (["item"], [["1.0"]]);
+  N.save ~name:"test_result.csv" (N.raw data);
   print_endline "\nCompleted all tests!"
