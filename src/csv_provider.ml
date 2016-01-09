@@ -110,6 +110,8 @@ let struct_of_url ?(sep=',') url loc =
                                                    body |> Cohttp_lwt_body.to_string >|= fun body -> body
                                          in get >>= fun text ->
                                          return (Csv.of_string ~separator:sep text |> Csv.input_all)];
+                                [%stri let save ?(sep=',') ~name data =
+                                         Lwt.return @@ Csv.save ~separator:sep file_name data];
                                 [%stri let rows data = List.map row_of_list data];
                                 [%stri let rec take ?(acc=[]) amount list = match amount, list with
                                        | 0, _ | _, [] -> acc
