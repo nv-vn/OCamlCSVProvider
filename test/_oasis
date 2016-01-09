@@ -1,5 +1,5 @@
 Name: CSV-Tests
-Version: 0.1
+Version: 1.0
 OCamlVersion: >= 4.02
 Synopsis: Tests for CSV type provider
 Authors: nv-vn <nv@cock.li>
