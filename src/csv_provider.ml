@@ -123,7 +123,13 @@ let struct_of_url ?(sep=',') url loc =
                                                    body |> Cohttp_lwt_body.to_string >|= fun body -> body
                                          in get >>= fun text ->
                                          return (Csv.of_string ~separator:sep text |> Csv.input_all
-                                                |> fun (h::xs) -> (h, xs))];
+                                                 |> fun (h::xs) -> (h, xs))];
+                                [%stri let local_load ?(sep=',') filename =
+                                         let open Lwt in
+                                         let fd = Lwt_unix.run @@ Lwt_io.open_file Input filename in
+                                         Lwt_io.read fd >>= fun text ->
+                                         return (Csv.of_string ~separator:sep text |> Csv.input_all
+                                                 |> fun (h::xs) -> (h, xs))];
                                 [%stri let save ?(sep=',') ~name data =
                                          let data' = fst data :: snd data in
                                          Lwt.return @@ Csv.save ~separator:sep name data'];

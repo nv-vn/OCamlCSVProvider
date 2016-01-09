@@ -21,7 +21,9 @@ let _ =
         Printf.printf "%s | %f | %f | %f | %f | %d | %f\n" d o h l c v a)
     (snd @@ N.range ~from:1 ~until:3 (N.rows N.embed));
   let open N in
-  let data = N.map (fun x -> {x with high = x.high +. 100.}) (N.rows N.embed) in
+  let open Lwt in
+  let data = Lwt_unix.run (N.local_load "test.csv" >>= fun t ->
+    return @@ N.map (fun x -> {x with high = x.high +. 100.}) (N.rows t)) in
   let data = N.filter (fun x -> x.volume > 50000000) data in
   List.map (fun d -> Printf.printf "%f\n" d.high) (snd data);
   print_endline "\nPretty-printing data with `show`...";
