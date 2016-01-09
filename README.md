@@ -35,11 +35,11 @@ val list_of_row : row -> string list
 (* Gives the original representation of the csv file *)
 val raw : string list * row list -> string list * string list list
 (* Loads a CSV file from the internet, given a URL and optional separator to use instead of "," *)
-val load : ?sep:char -> string -> string list * string list list
+val load : ?sep:char -> string -> (string list * string list list) Lwt.t
 (* Loads a CSV file from the local filesystem, given a URL and optional separator to use instead of "," *)
-val local_load : ?sep:char -> string -> string list * string list list
+val local_load : ?sep:char -> string -> (string list * string list list) Lwt.t
 (* Saves the data to a CSV file, given an optional separator and a filename *)
-val save : ?sep:char -> ~name:string -> string list * string list list
+val save : ?sep:char -> ~name:string -> string list * string list list -> unit Lwt.t
 (* Returns the data representation of the raw data *)
 val rows : string list * string list list -> string list * row list
 (* Takes the first `n` rows from the given data *)
