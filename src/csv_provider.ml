@@ -77,9 +77,11 @@ let formatter_of_list loc list example =
                          [("", inferf' loc e (Exp.field ~loc (Exp.ident ~loc { txt = Lident "x"; loc = loc }) { txt = Lident n; loc = loc }));
                           ("", r)])
       names (Exp.constant ~loc (Const_string ("", None))) in
-  [%stri let show xs =
+  [%stri let show (h, xs) =
            let (^^^) a b = if b = "" then a else a ^ " | " ^ b in
-           List.fold_right (^) (List.mapi (fun i x -> (string_of_int i ^ ". ") ^ [%e str] ^ "\n") xs) ""]
+           let header = List.fold_right (^^^) h "" ^ "\n"
+           and msg = List.fold_right (^) (List.mapi (fun i x -> (string_of_int i ^ ". ") ^ [%e str] ^ "\n") xs) ""
+           in header ^ msg]
 
 let rec make_list loc f = function
   | [] -> Exp.construct ~loc { txt = Lident "[]"; loc = loc } None
@@ -94,7 +96,8 @@ let struct_of_url ?(sep=',') url loc =
   let data = Csv.of_string ~separator:sep text |> Csv.input_all in
   let format = List.hd data
   and rows = List.tl data in
-  let embed = [%stri let embed = [%e ast_of_csv loc rows]]
+  let headers = make_list loc (fun x -> Exp.constant ~loc (Const_string (x, None))) format in
+  let embed = [%stri let embed = ([%e headers], [%e ast_of_csv loc rows])]
   and type_ = record_of_list loc format (List.hd rows)
   and conv = converter_of_list loc format (List.hd rows)
   and show = formatter_of_list loc format (List.hd rows) in
@@ -109,25 +112,27 @@ let struct_of_url ?(sep=',') url loc =
                                          let get = Client.get (Uri.of_string url) >>= fun (resp, body) ->
                                                    body |> Cohttp_lwt_body.to_string >|= fun body -> body
                                          in get >>= fun text ->
-                                         return (Csv.of_string ~separator:sep text |> Csv.input_all)];
+                                         return (Csv.of_string ~separator:sep text |> Csv.input_all
+                                                |> fun (h::xs) -> (h, xs))];
                                 [%stri let save ?(sep=',') ~name data =
-                                         Lwt.return @@ Csv.save ~separator:sep file_name data];
-                                [%stri let rows data = List.map row_of_list data];
-                                [%stri let rec take ?(acc=[]) amount list = match amount, list with
-                                       | 0, _ | _, [] -> acc
-                                       | n, x :: xs -> take ~acc:(acc @ [x]) (pred n) xs];
+                                         let data' = fst data :: snd data in
+                                         Lwt.return @@ Csv.save ~separator:sep name data'];
+                                [%stri let rows data = (fst data, List.map row_of_list (snd data))];
+                                [%stri let rec take ?(acc=[]) amount list = match amount, snd list with
+                                       | 0, _ | _, [] -> (fst list, acc)
+                                       | n, x :: xs -> take ~acc:(acc @ [x]) (pred n) (fst list, xs)];
                                 [%stri let rec drop amount = function
-                                       | _ :: xs when amount > 0 -> xs
-                                       | xs -> xs];
+                                       | (h, _ :: xs) when amount > 0 -> (h, xs)
+                                       | (h, xs) -> (h, xs)];
                                 [%stri let rec truncate amount list =
-                                         if amount >= List.length list then []
-                                         else take (List.length list - amount) list];
+                                         if amount >= List.length (snd list) then (fst list, [])
+                                         else take (List.length (snd list) - amount) list];
                                 [%stri let range ~from ~until list =
                                          take (until - from + 1) @@ drop from list];
                                 [%stri let get_sample ?(amount = 10) data =
-                                         List.map row_of_list (take amount data)];
-                                [%stri let map : (row -> row) -> row list -> row list = List.map];
-                                [%stri let filter : (row -> bool) -> row list -> row list = List.filter]]
+                                         (fst data, List.map row_of_list (snd (take amount data)))];
+                                [%stri let map f (h, xs) = (h, List.map f xs)];
+                                [%stri let filter p (h, xs) = (h, List.filter p xs)]]
 
 let csv_mapper argv =
   {default_mapper with
