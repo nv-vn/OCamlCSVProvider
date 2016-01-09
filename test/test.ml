@@ -22,7 +22,7 @@ let _ =
     (snd @@ N.range ~from:1 ~until:3 (N.rows N.embed));
   let open N in
   let open Lwt in
-  let data = Lwt_unix.run (N.local_load "test.csv" >>= fun t ->
+  let data = Lwt_unix.run (N.local_load "test/test.csv" >>= fun t ->
     return @@ N.map (fun x -> {x with high = x.high +. 100.}) (N.rows t)) in
   let data = N.filter (fun x -> x.volume > 50000000) data in
   List.map (fun d -> Printf.printf "%f\n" d.high) (snd data);
@@ -32,5 +32,5 @@ let _ =
   let open Lwt in Lwt_unix.run begin
   N.load "http://ichart.finance.yahoo.com/table.csv?s=MSFT" >>= fun csv ->
   return @@ print_endline @@ N.show @@ N.take 100 @@ N.rows csv end;
-  N.save ~name:"test_result.csv" (N.raw data);
+  N.save ~name:"test/test_result.csv" (N.raw data);
   print_endline "\nCompleted all tests!"

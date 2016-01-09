@@ -18,3 +18,11 @@ Executable "ppx_csv_provider"
   MainIs: csv_provider.ml
   CompiledObject: best
   BuildDepends: compiler-libs.common, lwt, cohttp.lwt, ppx_tools.metaquot, csv, batteries
+
+Executable "test_json_types"
+  Build$: flag(tests)
+  Path: test
+  MainIs: test.ml
+  Install: false
+  BuildDepends: ppx_csv_provider, csv, lwt, cohttp.lwt
+  DataFiles: test.csv
