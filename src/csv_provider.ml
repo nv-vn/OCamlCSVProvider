@@ -41,10 +41,22 @@ let inferf' loc s i =
   | "float" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "string_of_float"; loc = loc }) ["", i]
   | "string" -> i
 
+let replace_keyword s s' str =
+  String.replace ~str ~sub:s ~by:s' |> snd
+
+let rec replace_keywords str = function
+  | [] -> str
+  | s :: t -> replace_keywords (replace_keyword s (s ^ "_") str) t
+
 let lexer_friendly str =
   let stripped = String.replace_chars (function ' ' -> "" | '\t' -> "" | c -> String.of_char c)  str in
   let uncaps = String.uncapitalize stripped in
-  String.replace ~str:uncaps ~sub:"open" ~by:"open_" |> snd (* TODO: do for all keywords *)
+  replace_keywords uncaps ["and"; "as"; "assert"; "begin"; "class"; "constraint"; "do"; "done"; "downto";
+                           "else"; "end"; "exception"; "external"; "false"; "for"; "fun"; "function";
+                           "functor"; "if"; "in"; "include"; "inherit"; "initializer"; "lazy"; "let";
+                           "match"; "method"; "module"; "mutable"; "new"; "object"; "of"; "open"; "or";
+                           "private"; "rec"; "sig"; "struct"; "then"; "to"; "true"; "try"; "type"; "val";
+                           "virtual"; "when"; "while"; "with"]
 
 let record_of_list loc list example =
   let fields = List.map2 (fun i e ->
