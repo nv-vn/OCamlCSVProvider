@@ -12,10 +12,12 @@ level. In order to create a type provider for your data, simpy invoke the
 `[%csv ...]` extension with a URL to a local file (accessible at compile-
 time) or a CSV file hosted online. This will then generate a `struct` for
 you to use in a module expression, such as assigning that to a module or
-passing it as an argument to a functor. For example:
+passing it as an argument to a functor. Finally, to use an alternative
+separator (the default being a comma), you can use add a comma, followed
+by a character, into the extension syntax. For example:
 
 ```ocaml
-module MyTest = [%csv "./myTestFile.csv"]
+module MyTest = [%csv "./myTestFile.csv", ';'] (* ';' is the separator *)
 module OtherTest = CsvInterface.Make ([%csv "http://example.com/test.csv"])
 ```
 
