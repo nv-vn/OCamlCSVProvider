@@ -185,5 +185,3 @@ let csv_mapper argv =
      | x -> default_mapper.module_expr mapper x
    end
   }
-
-let _ = register "csv_provider" csv_mapper

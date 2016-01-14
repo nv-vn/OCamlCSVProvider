@@ -4,20 +4,25 @@ OCamlVersion: >= 4.02
 Synopsis: OCaml CSV Type Provider
 Authors: nv-vn <nv@cock.li>
 License: MIT
-InstallType: custom (0.4)
-
 OASISFormat: 0.4
 BuildTools: ocamlbuild
-Plugins: META (0.4), DevFiles (0.4)
+Plugins: DevFiles (0.4), META (0.4)
 
-XCustomInstall: ./install.sh
-XCustomUninstall: ocamlfind remove ppx_csv_provider
+Library "csv_provider"
+  Path: src
+  Modules: Csv_provider
+  BuildDepends: compiler-libs.common, lwt, cohttp.lwt, ppx_tools.metaquot, csv, batteries
+  Install: true
+  XMETAEnable: true
+  XMETAExtraLines: ppx = "ppx_csv_provider"
 
 Executable "ppx_csv_provider"
+  Build: true
+  Install: true
   Path: src/
-  MainIs: csv_provider.ml
+  MainIs: ppx_csv_provider.ml
   CompiledObject: best
-  BuildDepends: compiler-libs.common, lwt, cohttp.lwt, ppx_tools.metaquot, csv, batteries
+  BuildDepends: csv_provider
 
 Executable "test_json_types"
   Build$: flag(tests)

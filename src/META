@@ -1,4 +1,0 @@
-version = "1.0"
-description = "CSV Type Provider for OCaml as a PPX extension point"
-ppx = "./csv_provider.native"
-requires = "lwt, cohttp, csv, batteries, ppx_tools"
