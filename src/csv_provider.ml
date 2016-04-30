@@ -18,7 +18,7 @@ let get_csv url =
     Client.get (Uri.of_string url) >>= fun (resp, body) ->
     body |> Cohttp_lwt_body.to_string >|= fun body -> body
   else
-    let fd = Lwt_unix.run @@ Lwt_io.open_file Input url in
+    let fd = Lwt_main.run @@ Lwt_io.open_file Input url in
     Lwt_io.read fd
 
 let infer s =
@@ -138,7 +138,7 @@ let struct_of_url ?(sep=',') url loc =
                                                  |> fun (h::xs) -> (h, xs))];
                                 [%stri let local_load ?(sep=',') filename =
                                          let open Lwt in
-                                         let fd = Lwt_unix.run @@ Lwt_io.open_file Input filename in
+                                         let fd = Lwt_main.run @@ Lwt_io.open_file Input filename in
                                          Lwt_io.read fd >>= fun text ->
                                          return (Csv.of_string ~separator:sep text |> Csv.input_all
                                                  |> fun (h::xs) -> (h, xs))];
@@ -171,13 +171,13 @@ let csv_mapper argv =
          | PStr [{ pstr_desc =
                      Pstr_eval ({ pexp_loc = loc;
                                   pexp_desc = Pexp_constant (Const_string (sym, None))}, _)}] ->
-           Lwt_unix.run @@ struct_of_url sym loc
+           Lwt_main.run @@ struct_of_url sym loc
          | PStr [{ pstr_desc =
                      Pstr_eval ({ pexp_loc = loc;
                                   pexp_desc = Pexp_tuple
                                       [{ pexp_desc = Pexp_constant (Const_string (sym, None)); _ };
                                        { pexp_desc = Pexp_constant (Const_char sep); _ }]}, _)}] ->
-           Lwt_unix.run @@ struct_of_url ~sep sym loc
+           Lwt_main.run @@ struct_of_url ~sep sym loc
          | _ ->
            raise (Location.Error
                     (Location.error ~loc "[%csv ...] accepts a string, e.g. [%csv \"https://google.com\"]"))
