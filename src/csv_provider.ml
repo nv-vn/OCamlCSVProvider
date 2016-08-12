@@ -31,14 +31,14 @@ let infer s =
 
 let inferf loc s i =
   infer s |> function
-  | "int" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "int_of_string"; loc = loc }) ["", i]
-  | "float" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "float_of_string"; loc = loc }) ["", i]
+  | "int" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "int_of_string"; loc = loc }) [Nolabel, i]
+  | "float" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "float_of_string"; loc = loc }) [Nolabel, i]
   | "string" -> i
 
 let inferf' loc s i =
   infer s |> function
-  | "int" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "string_of_int"; loc = loc }) ["", i]
-  | "float" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "string_of_float"; loc = loc }) ["", i]
+  | "int" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "string_of_int"; loc = loc }) [Nolabel, i]
+  | "float" -> Exp.apply ~loc (Exp.ident ~loc { txt = Lident "string_of_float"; loc = loc }) [Nolabel, i]
   | "string" -> i
 
 let replace_keyword s s' str =
@@ -63,7 +63,7 @@ let record_of_list loc list example =
                            Type.field ~loc {txt = lexer_friendly i; loc = loc}
                              (Typ.constr {txt = Lident (infer e); loc = loc} []))
       list example in
-  Str.type_ ~loc [Type.mk {txt = "row"; loc = loc} ~kind:(Ptype_record fields)]
+  Str.type_ ~loc Nonrecursive [Type.mk {txt = "row"; loc = loc} ~kind:(Ptype_record fields)]
 
 let converter_of_list loc list example =
   let names = List.map (fun n -> lexer_friendly n) list in
@@ -86,9 +86,9 @@ let formatter_of_list loc list example =
     List.fold_right
       (fun (n, e) r -> Exp.apply ~loc
                          (Exp.ident ~loc { txt = Lident "^^^"; loc = loc })
-                         [("", inferf' loc e (Exp.field ~loc (Exp.ident ~loc { txt = Lident "x"; loc = loc }) { txt = Lident n; loc = loc }));
-                          ("", r)])
-      names (Exp.constant ~loc (Const_string ("", None))) in
+                         [(Nolabel, inferf' loc e (Exp.field ~loc (Exp.ident ~loc { txt = Lident "x"; loc = loc }) { txt = Lident n; loc = loc }));
+                          (Nolabel, r)])
+      names (Exp.constant ~loc (Pconst_string ("", None))) in
   [%stri let show (h, xs) =
            let (^^^) a b = if b = "" then a else a ^ " | " ^ b in
            let header = List.fold_right (^^^) h "" ^ "\n"
@@ -106,7 +106,7 @@ let stringify_of_list loc list example =
   [%stri let list_of_row x = [%e str]]
 
 let ast_of_csv loc =
-  let f = make_list loc (fun x -> Exp.constant ~loc (Const_string (x, None))) in
+  let f = make_list loc (fun x -> Exp.constant ~loc (Pconst_string (x, None))) in
   make_list loc f
 
 let struct_of_url ?(sep=',') url loc =
@@ -114,7 +114,7 @@ let struct_of_url ?(sep=',') url loc =
   let data = Csv.of_string ~separator:sep text |> Csv.input_all in
   let format = List.hd data
   and rows = List.tl data in
-  let headers = make_list loc (fun x -> Exp.constant ~loc (Const_string (x, None))) format in
+  let headers = make_list loc (fun x -> Exp.constant ~loc (Pconst_string (x, None))) format in
   let embed = [%stri let embed = ([%e headers], [%e ast_of_csv loc rows])]
   and type_ = record_of_list loc format (List.hd rows)
   and conv = converter_of_list loc format (List.hd rows)
@@ -170,13 +170,13 @@ let csv_mapper argv =
        begin match pstr with
          | PStr [{ pstr_desc =
                      Pstr_eval ({ pexp_loc = loc;
-                                  pexp_desc = Pexp_constant (Const_string (sym, None))}, _)}] ->
+                                  pexp_desc = Pexp_constant (Pconst_string (sym, None))}, _)}] ->
            Lwt_main.run @@ struct_of_url sym loc
          | PStr [{ pstr_desc =
                      Pstr_eval ({ pexp_loc = loc;
                                   pexp_desc = Pexp_tuple
-                                      [{ pexp_desc = Pexp_constant (Const_string (sym, None)); _ };
-                                       { pexp_desc = Pexp_constant (Const_char sep); _ }]}, _)}] ->
+                                      [{ pexp_desc = Pexp_constant (Pconst_string (sym, None)); _ };
+                                       { pexp_desc = Pexp_constant (Pconst_char sep); _ }]}, _)}] ->
            Lwt_main.run @@ struct_of_url ~sep sym loc
          | _ ->
            raise (Location.Error

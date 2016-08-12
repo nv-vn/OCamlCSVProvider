@@ -1,6 +1,6 @@
 Name: CsvProvider
-Version: 1.0
-OCamlVersion: >= 4.02
+Version: 1.2
+OCamlVersion: >= 4.03
 Synopsis: OCaml CSV Type Provider
 Authors: nv-vn <nv@cock.li>
 License: MIT
