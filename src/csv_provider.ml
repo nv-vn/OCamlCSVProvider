@@ -16,7 +16,7 @@ let get_csv url =
     String.starts_with url "http://" || String.starts_with url "https://" in
   if is_web then
     Client.get (Uri.of_string url) >>= fun (resp, body) ->
-    body |> Cohttp_lwt_body.to_string >|= fun body -> body
+    body |> Cohttp_lwt.Body.to_string >|= fun body -> body
   else
     let fd = Lwt_main.run @@ Lwt_io.open_file Input url in
     Lwt_io.read fd
